@@ -96,7 +96,8 @@ class GaugeReader:
             if len(response) >= 9:
                 if response[0] == 0x01 and response[1] == 0x04 and response[2] == 0x04:
                     raw_data = struct.unpack('>i', response[3:7])[0]
-                    return raw_data / 10000.0
+                    # 修改这里：改为除以1000而不是10000
+                    return raw_data / 1000.0
 
             raise Exception("读取数据格式错误")
 

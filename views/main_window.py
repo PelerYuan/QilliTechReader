@@ -102,8 +102,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.port_comboBox.addItems(["请选择串口"])
 
         # 设置表格列标题
-        self.tableWidget.setColumnCount(3)
-        self.tableWidget.setHorizontalHeaderLabels(["时间", "数值(mm)", "备注"])
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setHorizontalHeaderLabels(["时间", "数值(mm)"])
 
         # 初始状态设置
         self.set_operation_buttons_enabled(False)
@@ -220,14 +220,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.clear_pushButton.setEnabled(True)
             self.read_interval_doubleSpinBox.setEnabled(True)
 
-    def add_data_to_table(self, timestamp, value, remark=""):
+    def add_data_to_table(self, timestamp, value):
         """向数据表格添加数据"""
         row_count = self.tableWidget.rowCount()
         self.tableWidget.insertRow(row_count)
 
         self.tableWidget.setItem(row_count, 0, QTableWidgetItem(timestamp))
-        self.tableWidget.setItem(row_count, 1, QTableWidgetItem(f"{value:+8.4f}"))
-        self.tableWidget.setItem(row_count, 2, QTableWidgetItem(remark))
+        self.tableWidget.setItem(row_count, 1, QTableWidgetItem(f"{value:+8.3f}"))
 
         # 自动滚动到最新数据
         self.tableWidget.scrollToBottom()

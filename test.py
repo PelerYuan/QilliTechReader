@@ -82,7 +82,8 @@ class GaugeReader:
                 # 解析数据: 地址 功能码 字节数 数据(4字节) CRC(2字节)
                 if response[0] == 0x01 and response[1] == 0x04 and response[2] == 0x04:
                     raw_data = struct.unpack('>i', response[3:7])[0]
-                    return raw_data / 10000.0
+                    # 修改这里：改为除以1000而不是10000
+                    return raw_data / 1000.0
             return None
         except Exception as e:
             print(f"读取错误: {e}")
@@ -141,7 +142,7 @@ class GaugeReader:
                     last_time = time.time()
 
                     print(
-                        f"[{now}] #{count:4d} 位移:{value:+8.4f}mm 平均:{current_freq:.1f}Hz 瞬时:{instant_freq:.1f}Hz")
+                        f"[{now}] #{count:4d} 位移:{value:+8.3f}mm 平均:{current_freq:.1f}Hz 瞬时:{instant_freq:.1f}Hz")
                 else:
                     print("❌ 读取失败")
 
@@ -262,7 +263,7 @@ def main():
             if choice == '1':
                 value = gauge.read_value()
                 if value is not None:
-                    print(f"📏 当前读数: {value:+8.4f}mm")
+                    print(f"📏 当前读数: {value:+8.3f}mm")
                 else:
                     print("❌ 读取失败")
 
@@ -296,7 +297,7 @@ def main():
                     time.sleep(0.5)
                     value = gauge.read_value()
                     if value is not None:
-                        print(f"📏 清零后读数: {value:+8.4f}mm")
+                        print(f"📏 清零后读数: {value:+8.3f}mm")
                 else:
                     print("❌ 清零失败")
 

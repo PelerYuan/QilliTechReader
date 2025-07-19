@@ -266,7 +266,7 @@ class MainController(QObject):
         self.gauge_model.current_value = value
 
         # 添加到表格
-        self.view.add_data_to_table(timestamp, value, "连续读取")
+        self.view.add_data_to_table(timestamp, value)
 
     def handle_continuous_read_error(self, error_msg):
         """处理连续读取错误"""
@@ -337,7 +337,7 @@ class MainController(QObject):
         """处理数据变化"""
         # 可以在这里添加数据到表格
         from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.view.add_data_to_table(timestamp, value)
 
     def handle_error(self, error_msg):

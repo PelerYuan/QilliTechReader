@@ -383,7 +383,7 @@ class SingleReadDialog(QDialog):
         value_layout.setSpacing(10)
 
         # 主数值显示 - 移除复杂样式
-        value_label = QLabel(f"{self.value:+8.4f}")
+        value_label = QLabel(f"{self.value:+8.3f}")
         value_label.setAlignment(Qt.AlignCenter)
         value_label.setStyleSheet("font-size: 24px; font-weight: bold; color: blue; padding: 10px;")
         value_layout.addWidget(value_label)

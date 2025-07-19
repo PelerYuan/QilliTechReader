@@ -34,7 +34,7 @@ class ContinuousReadWorker(QObject):
             try:
                 if self.serial_model.gauge_reader:
                     value = self.serial_model.gauge_reader.read_value()
-                    timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                     self.dataRead.emit(value, timestamp)
                 else:
                     self.errorOccurred.emit("设备连接已断开")

@@ -214,7 +214,7 @@
     <addaction name="action"/>
     <addaction name="menu_2"/>
     <addaction name="separator"/>
-    <addaction name="action_2"/>
+    <addaction name="exit_action"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -233,7 +233,7 @@
     <string>新建</string>
    </property>
   </action>
-  <action name="action_2">
+  <action name="exit_action">
    <property name="text">
     <string>退出</string>
    </property>

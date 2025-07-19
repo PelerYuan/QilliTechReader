@@ -104,9 +104,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 连接读取间隔变化信号
         self.read_interval_doubleSpinBox.valueChanged.connect(self.on_interval_changed)
 
-        # 连接菜单动作（如果存在）
-        if hasattr(self, 'action_2'):  # 退出
-            self.action_2.triggered.connect(self.close)
+        self.exit_action.triggered.connect(self.close)
+        self.about_action.triggered.connect(self.show_about)
+        self.install_driver_action.triggered.connect(self.install_driver)
 
     def setup_initial_values(self):
         """设置初始值"""
@@ -325,3 +325,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
         event.accept()
         self.windowClosing.emit()
+
+    def install_driver(self):
+        """安装驱动"""
+        import os
+        import subprocess
+
+        driver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "driver", "USBMSER.exe")
+
+        if os.path.exists(driver_path):
+            try:
+                subprocess.Popen([driver_path])
+                self.update_status("正在启动驱动安装程序...")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"无法启动驱动安装程序：{str(e)}")
+        else:
+            QMessageBox.warning(self, "错误", "驱动程序文件不存在！\n请确保 driver/USBMSER.exe 文件存在。")
+
+    def show_about(self):
+        """显示关于对话框"""
+        from .dialogs import AboutDialog
+        dialog = AboutDialog(self)
+        dialog.exec_()

@@ -22,6 +22,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     continuousReadRequested = pyqtSignal(float)  # 连续读取请求 (interval)
     stopReadRequested = pyqtSignal()  # 停止读取请求
     zeroRequested = pyqtSignal()  # 清零请求
+    windowClosing = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -41,6 +42,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 初始化状态
         self._is_connected = False
         self._is_reading = False
+
+        # 用于控制器引用
+        self.controller = None
 
     def fix_chinese_labels(self):
         """修正中文显示问题"""
@@ -307,3 +311,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def set_chart_max_points(self, max_points):
         """设置图表最大数据点数"""
         self.chart_widget.set_max_points(max_points)
+
+    def set_controller(self, controller):
+        """设置控制器引用"""
+        self.controller = controller
+
+    def closeEvent(self, event):
+        """重写关闭事件处理"""
+        if self.controller:
+            # 让控制器处理退出逻辑
+            if not self.controller.handle_exit():
+                event.ignore()  # 取消关闭
+                return
+        event.accept()
+        self.windowClosing.emit()

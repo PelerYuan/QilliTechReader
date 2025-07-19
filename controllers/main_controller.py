@@ -11,6 +11,24 @@ from views.main_window import MainWindow
 from views.dialogs import *
 from datetime import datetime
 
+import os
+import csv
+from datetime import datetime
+
+# 添加这些可选导入
+try:
+    import pandas as pd
+    import openpyxl
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
+
+try:
+    import sqlite3
+    ACCESS_AVAILABLE = True
+except ImportError:
+    ACCESS_AVAILABLE = False
+
 
 class MainController(QObject):
     """主控制器 - 协调Model和View"""
@@ -23,8 +41,12 @@ class MainController(QObject):
         self.serial_model = SerialModel()
         self.view = MainWindow()
 
+        # 设置视图的控制器引用
+        self.view.set_controller(self)
+
         # 连接信号和槽
         self.setup_connections()
+        self.setup_menu_connections()
 
         # 初始化
         self.initialize()
@@ -32,6 +54,9 @@ class MainController(QObject):
         # 连续读取相关
         self.read_thread = None
         self.read_worker = None
+
+        # 存储所有打开的窗口实例
+        self.open_windows = []
 
     def setup_connections(self):
         """设置信号连接"""
@@ -435,3 +460,263 @@ class MainController(QObject):
     def set_chart_preferences(self, max_points=1000):
         """设置图表偏好"""
         self.view.set_chart_max_points(max_points)
+
+    def handle_new_window(self):
+        """处理新建窗口请求"""
+        try:
+            new_controller = MainController()
+            self.open_windows.append(new_controller)
+            window_count = len(self.open_windows)
+            new_controller.view.setWindowTitle(f"千分表数据读取器 - 窗口 {window_count}")
+            new_controller.show()
+            self.view.update_status(f"已打开新窗口 - 窗口 {window_count}")
+        except Exception as e:
+            QMessageBox.critical(self.view, "错误", f"无法创建新窗口：{str(e)}")
+
+    def handle_exit(self):
+        """处理退出请求"""
+        # 直接停止所有操作，不询问确认
+        if self.gauge_model.is_reading:
+            self.handle_stop_read()
+
+        if self.gauge_model.is_connected:
+            self.handle_disconnect()
+
+        # 关闭窗口
+        self.view.close()
+        return True
+
+    def get_table_data(self):
+        """获取表格数据的辅助方法"""
+        table_data = []
+        table = self.view.tableWidget
+        for row in range(table.rowCount()):
+            row_data = []
+            for col in range(table.columnCount()):
+                item = table.item(row, col)
+                row_data.append(item.text() if item else "")
+            table_data.append(row_data)
+        return table_data
+
+    def setup_menu_connections(self):
+        """设置菜单信号连接"""
+        if hasattr(self.view, 'action'):  # 新建
+            self.view.action.triggered.connect(self.handle_new_window)
+
+        if hasattr(self.view, 'action_2'):  # 退出
+            self.view.action_2.triggered.connect(self.handle_exit)
+
+        if hasattr(self.view, 'actionCSV'):
+            self.view.actionCSV.triggered.connect(self.handle_export_csv)
+
+        if hasattr(self.view, 'actionExcel'):
+            self.view.actionExcel.triggered.connect(self.handle_export_excel)
+
+        if hasattr(self.view, 'actionAccess'):
+            self.view.actionAccess.triggered.connect(self.handle_export_access)
+
+    def handle_export_csv(self):
+        """处理CSV导出"""
+        data_count = self.view.get_data_count()
+        if data_count == 0:
+            QMessageBox.information(self.view, "提示", "当前没有数据可以导出。")
+            return
+
+        # 选择保存文件路径
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.view,
+            "导出CSV文件",
+            f"千分表数据_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            "CSV文件 (*.csv)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            self.view.update_status("正在导出CSV文件...")
+
+            # 获取表格数据
+            table_data = self.get_table_data()
+
+            # 写入CSV文件
+            with open(file_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+                writer = csv.writer(csvfile)
+
+                # 写入表头
+                writer.writerow(['时间', '数值(mm)'])
+
+                # 写入数据
+                for row_data in table_data:
+                    writer.writerow(row_data)
+
+            self.view.update_status(f"CSV文件导出成功：{os.path.basename(file_path)}")
+            QMessageBox.information(self.view, "导出成功", f"数据已成功导出到：\n{file_path}")
+
+        except Exception as e:
+            self.view.update_status(f"CSV导出失败：{str(e)}")
+            QMessageBox.critical(self.view, "导出失败", f"CSV文件导出失败：\n{str(e)}")
+
+    def handle_export_excel(self):
+        """处理Excel导出"""
+        if not EXCEL_AVAILABLE:
+            QMessageBox.warning(
+                self.view,
+                "功能不可用",
+                "Excel导出功能需要安装pandas和openpyxl库。\n\n"
+                "请运行以下命令安装：\n"
+                "pip install pandas openpyxl"
+            )
+            return
+
+        data_count = self.view.get_data_count()
+        if data_count == 0:
+            QMessageBox.information(self.view, "提示", "当前没有数据可以导出。")
+            return
+
+        # 选择保存文件路径
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.view,
+            "导出Excel文件",
+            f"千分表数据_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            "Excel文件 (*.xlsx)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            self.view.update_status("正在导出Excel文件...")
+
+            # 获取表格数据
+            table_data = self.get_table_data()
+
+            # 创建DataFrame
+            df = pd.DataFrame(table_data, columns=['时间', '数值(mm)'])
+
+            # 写入Excel文件
+            with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='千分表数据', index=False)
+
+                # 获取工作表并设置格式
+                worksheet = writer.sheets['千分表数据']
+
+                # 设置列宽
+                worksheet.column_dimensions['A'].width = 15  # 时间列
+                worksheet.column_dimensions['B'].width = 12  # 数值列
+                worksheet.column_dimensions['C'].width = 10  # 备注列
+
+                # 添加统计信息工作表
+                stats_data = [
+                    ['统计项目', '数值'],
+                    ['总记录数', len(table_data)],
+                    ['最大值', max([float(row[1]) for row in table_data]) if table_data else 0],
+                    ['最小值', min([float(row[1]) for row in table_data]) if table_data else 0],
+                    ['平均值', sum([float(row[1]) for row in table_data]) / len(table_data) if table_data else 0],
+                    ['导出时间', datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+                ]
+
+                stats_df = pd.DataFrame(stats_data[1:], columns=stats_data[0])
+                stats_df.to_excel(writer, sheet_name='统计信息', index=False)
+
+            self.view.update_status(f"Excel文件导出成功：{os.path.basename(file_path)}")
+            QMessageBox.information(self.view, "导出成功", f"数据已成功导出到：\n{file_path}")
+
+        except Exception as e:
+            self.view.update_status(f"Excel导出失败：{str(e)}")
+            QMessageBox.critical(self.view, "导出失败", f"Excel文件导出失败：\n{str(e)}")
+
+    def handle_export_access(self):
+        """处理Access数据库导出（使用SQLite作为替代）"""
+        if not ACCESS_AVAILABLE:
+            QMessageBox.warning(
+                self.view,
+                "功能不可用",
+                "数据库导出功能需要sqlite3库支持。"
+            )
+            return
+
+        data_count = self.view.get_data_count()
+        if data_count == 0:
+            QMessageBox.information(self.view, "提示", "当前没有数据可以导出。")
+            return
+
+        # 选择保存文件路径
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.view,
+            "导出SQLite数据库文件",
+            f"千分表数据_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db",
+            "SQLite数据库文件 (*.db);;所有文件 (*.*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            self.view.update_status("正在导出数据库文件...")
+
+            # 获取表格数据
+            table_data = self.get_table_data()
+
+            # 创建SQLite数据库
+            conn = sqlite3.connect(file_path)
+            cursor = conn.cursor()
+
+            # 创建数据表
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS gauge_data
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               timestamp
+                               TEXT
+                               NOT
+                               NULL,
+                               value
+                               REAL
+                               NOT
+                               NULL,
+                               created_at
+                               DATETIME
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )
+                           ''')
+
+            # 插入数据
+            for row_data in table_data:
+                cursor.execute(
+                    'INSERT INTO gauge_data (timestamp, value) VALUES (?, ?)',
+                    row_data
+                )
+
+            # 创建统计视图
+            cursor.execute('''
+                           CREATE VIEW IF NOT EXISTS data_statistics AS
+                           SELECT COUNT(*)                     as total_records,
+                                  MAX(value)                   as max_value,
+                                  MIN(value)                   as min_value,
+                                  AVG(value)                   as avg_value,
+                                  datetime('now', 'localtime') as export_time
+                           FROM gauge_data
+                           ''')
+
+            # 提交并关闭
+            conn.commit()
+            conn.close()
+
+            self.view.update_status(f"数据库文件导出成功：{os.path.basename(file_path)}")
+            QMessageBox.information(
+                self.view,
+                "导出成功",
+                f"数据已成功导出到SQLite数据库：\n{file_path}\n\n"
+                f"注意：由于技术限制，导出为SQLite格式而非Access格式。\n"
+                f"SQLite数据库可以用多种工具打开，包括DB Browser for SQLite等。"
+            )
+
+        except Exception as e:
+            self.view.update_status(f"数据库导出失败：{str(e)}")
+            QMessageBox.critical(self.view, "导出失败", f"数据库文件导出失败：\n{str(e)}")

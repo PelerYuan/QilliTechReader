@@ -225,11 +225,11 @@ class MainController(QObject):
                 self.gauge_model.current_value = value
 
                 # 添加到表格和图表
-                timestamp = datetime.now()
-                timestamp_str = timestamp.strftime("%H:%M:%S.%f")[:-3]
-
-                self.view.add_data_to_table(timestamp_str, value)
-                self.view.add_data_to_chart(timestamp, value)
+                # timestamp = datetime.now()
+                # timestamp_str = timestamp.strftime("%H:%M:%S.%f")[:-3]
+                #
+                # self.view.add_data_to_table(timestamp_str, value)
+                # self.view.add_data_to_chart(timestamp, value)
 
                 # 获取连接信息
                 conn_info = self.gauge_model.get_current_connection_info()

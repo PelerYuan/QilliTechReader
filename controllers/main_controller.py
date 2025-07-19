@@ -76,6 +76,9 @@ class MainController(QObject):
             self.view.connect_pushButton.setEnabled(False)
             self.view.connect_pushButton.setText("连接中...")
 
+            # ========== 修改1：在连接时禁用自动检测按钮 ==========
+            self.view.auto_detect_pushButton.setEnabled(False)
+
             # 尝试连接
             success = self.serial_model.connect(port, baudrate)
 
@@ -92,14 +95,18 @@ class MainController(QObject):
                 print(f"连接成功: {port} @ {baudrate}")
 
             else:
-                # 连接失败，但错误信息通过信号处理
+                # 连接失败，恢复按钮状态
                 self.view.connect_pushButton.setEnabled(True)
                 self.view.connect_pushButton.setText("连接")
+                # ========== 修改1：连接失败时恢复自动检测按钮 ==========
+                self.view.auto_detect_pushButton.setEnabled(True)
 
         except Exception as e:
-            # 处理意外错误
+            # 处理意外错误，恢复按钮状态
             self.view.connect_pushButton.setEnabled(True)
             self.view.connect_pushButton.setText("连接")
+            # ========== 修改1：出现异常时恢复自动检测按钮 ==========
+            self.view.auto_detect_pushButton.setEnabled(True)
             self.handle_connection_error(str(e), port, baudrate)
 
     def handle_disconnect(self):
@@ -131,6 +138,9 @@ class MainController(QObject):
         self.view.auto_detect_pushButton.setEnabled(False)
         self.view.auto_detect_pushButton.setText("检测中...")
 
+        # ========== 修改2：在自动检测时禁用连接按钮 ==========
+        self.view.connect_pushButton.setEnabled(False)
+
         # 创建检测线程
         self.detect_thread = QThread()
         self.detect_worker = AutoDetectWorker(current_port)
@@ -151,6 +161,9 @@ class MainController(QObject):
         # 恢复按钮状态
         self.view.auto_detect_pushButton.setEnabled(True)
         self.view.auto_detect_pushButton.setText("自动检测")
+
+        # ========== 修改2：自动检测完成时恢复连接按钮 ==========
+        self.view.connect_pushButton.setEnabled(True)
 
         current_baudrate = int(self.view.baudrate_comboBox.currentText())
 
@@ -384,11 +397,15 @@ class MainController(QObject):
             # 连接成功，恢复按钮状态
             self.view.connect_pushButton.setEnabled(True)
             self.view.connect_pushButton.setText("断开")
+            # ========== 修改1：连接成功后，自动检测按钮保持禁用状态（因为已连接） ==========
+            # 注意：这里不恢复自动检测按钮，因为已经连接，不需要再检测
         else:
-            # 连接断开
+            # 连接断开，恢复所有按钮状态
             self.gauge_model.is_connected = False
             self.view.connect_pushButton.setEnabled(True)
             self.view.connect_pushButton.setText("连接")
+            # ========== 修改1：断开连接时恢复自动检测按钮 ==========
+            self.view.auto_detect_pushButton.setEnabled(True)
 
     def handle_data_received(self, value):
         """处理接收到的数据"""

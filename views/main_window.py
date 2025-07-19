@@ -7,6 +7,8 @@ from models.interval_calculator import IntervalCalculator
 # 导入你的UI文件
 from .ui.MainWindow import Ui_MainWindow
 from .dialogs import *
+# 导入图表组件
+from .chart_widget import GaugeChartWidget
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -28,6 +30,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # 修正中文显示问题
         self.fix_chinese_labels()
+
+        # 设置图表组件
+        self.setup_chart()
 
         # 设置连接和初始值
         self.setup_connections()
@@ -69,6 +74,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if hasattr(self, 'action_2'):
             self.action_2.setText("退出")
 
+    def setup_chart(self):
+        """设置图表组件"""
+        # 创建图表组件
+        self.chart_widget = GaugeChartWidget()
+
+        # 将图表组件添加到图表标签页
+        # 清空原有的布局内容
+        if self.verticalLayout_2.count() > 0:
+            for i in reversed(range(self.verticalLayout_2.count())):
+                self.verticalLayout_2.itemAt(i).widget().setParent(None)
+
+        # 添加图表组件
+        self.verticalLayout_2.addWidget(self.chart_widget)
+
     def setup_connections(self):
         """连接信号和槽"""
         # 连接按钮信号
@@ -76,7 +95,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.auto_detect_pushButton.clicked.connect(self.autoDetectRequested.emit)
         self.read_once_pushButton.clicked.connect(self.singleReadRequested.emit)
         self.read_serious_pushButton.clicked.connect(self.on_continuous_read_clicked)
-        self.clear_pushButton.clicked.connect(self.zeroRequested.emit)
+        self.clear_pushButton.clicked.connect(self.on_clear_clicked)
 
         # 连接读取间隔变化信号
         self.read_interval_doubleSpinBox.valueChanged.connect(self.on_interval_changed)
@@ -130,6 +149,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.continuousReadRequested.emit(interval)
         else:
             self.stopReadRequested.emit()
+
+    def on_clear_clicked(self):
+        """清零按钮点击处理"""
+        # 发出清零请求信号
+        self.zeroRequested.emit()
 
     def on_interval_changed(self, value):
         """读取间隔改变处理"""
@@ -226,14 +250,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableWidget.insertRow(row_count)
 
         self.tableWidget.setItem(row_count, 0, QTableWidgetItem(timestamp))
-        self.tableWidget.setItem(row_count, 1, QTableWidgetItem(f"{value:+8.3f}"))
+        self.tableWidget.setItem(row_count, 1, QTableWidgetItem(f"{value:+8.4f}"))
 
         # 自动滚动到最新数据
         self.tableWidget.scrollToBottom()
 
+    def add_data_to_chart(self, timestamp, value):
+        """向图表添加数据"""
+        self.chart_widget.add_data_point(timestamp, value)
+
     def clear_data_table(self):
         """清空数据表格"""
         self.tableWidget.setRowCount(0)
+
+    def clear_chart(self):
+        """清空图表"""
+        self.chart_widget.clear_chart()
+
+    def clear_all_data(self):
+        """清空所有数据（表格和图表）"""
+        self.clear_data_table()
+        self.clear_chart()
 
     def validate_initial_interval(self):
         """验证初始间隔设置"""
@@ -258,3 +295,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def get_data_count(self):
         """获取表格中的数据行数"""
         return self.tableWidget.rowCount()
+
+    def get_chart_data_count(self):
+        """获取图表中的数据点数"""
+        return len(self.chart_widget.value_data)
+
+    def export_chart_data(self):
+        """导出图表数据"""
+        return self.chart_widget.get_chart_data()
+
+    def set_chart_max_points(self, max_points):
+        """设置图表最大数据点数"""
+        self.chart_widget.set_max_points(max_points)

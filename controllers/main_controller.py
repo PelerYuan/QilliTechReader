@@ -182,18 +182,19 @@ class MainController(QObject):
             # 读取数据
             value = self.serial_model.read_value()
 
-            # 添加调试信息
-            print(f"Debug: 读取到的原始值: {value}")
-
             if value is not None:
                 # 更新模型
                 self.gauge_model.current_value = value
 
+                # 添加到表格和图表
+                timestamp = datetime.now()
+                timestamp_str = timestamp.strftime("%H:%M:%S.%f")[:-3]
+
+                self.view.add_data_to_table(timestamp_str, value)
+                self.view.add_data_to_chart(timestamp, value)
+
                 # 获取连接信息
                 conn_info = self.gauge_model.get_current_connection_info()
-
-                # 添加调试信息
-                print(f"Debug: 准备显示对话框，值: {value}, 端口: {conn_info['port']}")
 
                 # 显示读取结果对话框
                 dialog = SingleReadDialog(
@@ -206,12 +207,11 @@ class MainController(QObject):
 
                 self.view.update_status("单次读取完成")
             else:
-                print("Debug: 读取值为None")  # 添加调试
                 QMessageBox.warning(self.view, "读取失败", "无法读取设备数据，请检查连接。")
                 self.view.update_status("单次读取失败")
 
         except Exception as e:
-            print(f"Debug: 异常信息: {e}")  # 添加调试
+            print(e)
             QMessageBox.critical(self.view, "读取错误", f"读取过程中发生错误：{str(e)}")
             self.view.update_status(f"读取错误: {str(e)}")
 
@@ -265,8 +265,19 @@ class MainController(QObject):
         # 更新模型
         self.gauge_model.current_value = value
 
-        # 添加到表格
+        # 同时添加到表格和图表
         self.view.add_data_to_table(timestamp, value)
+
+        # 为图表创建datetime对象
+        try:
+            # 解析时间戳字符串为datetime对象
+            today = datetime.now().date()
+            time_part = datetime.strptime(timestamp, "%H:%M:%S.%f").time()
+            dt = datetime.combine(today, time_part)
+            self.view.add_data_to_chart(dt, value)
+        except ValueError:
+            # 如果解析失败，使用当前时间
+            self.view.add_data_to_chart(datetime.now(), value)
 
     def handle_continuous_read_error(self, error_msg):
         """处理连续读取错误"""
@@ -300,11 +311,13 @@ class MainController(QObject):
                 return
             self.handle_stop_read()
 
-        # 获取当前数据条数
-        data_count = self.view.get_data_count()
+        # 获取当前数据条数（表格和图表）
+        table_count = self.view.get_data_count()
+        chart_count = self.view.get_chart_data_count()
+        total_count = max(table_count, chart_count)
 
         # 显示确认对话框
-        dialog = ZeroConfirmDialog(data_count, self.view)
+        dialog = ZeroConfirmDialog(total_count, self.view)
         result = dialog.exec_()
 
         if result == QDialog.Accepted:
@@ -315,8 +328,8 @@ class MainController(QObject):
                 success = self.serial_model.zero_device()
 
                 if success:
-                    # 清空表格数据
-                    self.view.clear_data_table()
+                    # 清空表格数据和图表
+                    self.view.clear_all_data()
 
                     # 更新当前值为0
                     self.gauge_model.current_value = 0.0
@@ -335,10 +348,9 @@ class MainController(QObject):
 
     def handle_data_changed(self, value):
         """处理数据变化"""
-        # 可以在这里添加数据到表格
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        self.view.add_data_to_table(timestamp, value)
+        # 这个方法现在主要用于其他可能的数据更新场景
+        # 表格和图表的更新在具体的读取方法中处理
+        pass
 
     def handle_error(self, error_msg):
         """处理错误"""
@@ -386,3 +398,23 @@ class MainController(QObject):
     def show(self):
         """显示主窗口"""
         self.view.show()
+
+    def export_data(self):
+        """导出数据（表格和图表）"""
+        try:
+            # 获取图表数据
+            chart_data = self.view.export_chart_data()
+
+            # 可以添加导出到文件的逻辑
+            return {
+                'table_rows': self.view.get_data_count(),
+                'chart_points': chart_data['count'],
+                'chart_data': chart_data
+            }
+        except Exception as e:
+            print(f"导出数据时出错: {e}")
+            return None
+
+    def set_chart_preferences(self, max_points=1000):
+        """设置图表偏好"""
+        self.view.set_chart_max_points(max_points)

@@ -66,9 +66,11 @@ class SerialModel(QObject):
         if self.gauge_reader:
             try:
                 value = self.gauge_reader.read_value()
+                print(f"Debug: GaugeReader返回值: {value}")  # 添加这行
                 self.dataReceived.emit(value)
                 return value
             except Exception as e:
+                print(f"Debug: GaugeReader异常: {e}")  # 添加这行
                 self.errorOccurred.emit(str(e))
                 return None
         return None

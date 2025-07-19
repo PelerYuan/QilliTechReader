@@ -182,12 +182,18 @@ class MainController(QObject):
             # 读取数据
             value = self.serial_model.read_value()
 
+            # 添加调试信息
+            print(f"Debug: 读取到的原始值: {value}")
+
             if value is not None:
                 # 更新模型
                 self.gauge_model.current_value = value
 
                 # 获取连接信息
                 conn_info = self.gauge_model.get_current_connection_info()
+
+                # 添加调试信息
+                print(f"Debug: 准备显示对话框，值: {value}, 端口: {conn_info['port']}")
 
                 # 显示读取结果对话框
                 dialog = SingleReadDialog(
@@ -200,11 +206,12 @@ class MainController(QObject):
 
                 self.view.update_status("单次读取完成")
             else:
+                print("Debug: 读取值为None")  # 添加调试
                 QMessageBox.warning(self.view, "读取失败", "无法读取设备数据，请检查连接。")
                 self.view.update_status("单次读取失败")
 
         except Exception as e:
-            print(e)
+            print(f"Debug: 异常信息: {e}")  # 添加调试
             QMessageBox.critical(self.view, "读取错误", f"读取过程中发生错误：{str(e)}")
             self.view.update_status(f"读取错误: {str(e)}")
 

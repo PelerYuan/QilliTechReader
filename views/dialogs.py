@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from datetime import datetime
 
 # ==================== 自动检测对话框 ====================
 class AutoDetectDialog(QDialog):
@@ -214,7 +215,7 @@ class IntervalWarningDialog(QDialog):
     def setup_ui(self):
         """设置对话框UI"""
         self.setWindowTitle("读取间隔警告")
-        self.setFixedSize(450, 320)
+        self.setFixedSize(500, 700)
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint)
 
         layout = QVBoxLayout(self)
@@ -354,84 +355,75 @@ class SingleReadDialog(QDialog):
     def setup_ui(self):
         """设置对话框UI"""
         self.setWindowTitle("单次读取结果")
-        self.setFixedSize(350, 250)
-        self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint)
+
+        # 使用更可靠的方法设置尺寸
+        self.resize(500, 600)
+        self.setMinimumSize(500, 600)
+        self.setMaximumSize(500, 600)
 
         layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+        layout.setContentsMargins(25, 25, 25, 25)
 
-        # 成功图标
+        # 成功图标 - 简化样式
         icon_label = QLabel("📏")
         icon_label.setAlignment(Qt.AlignCenter)
         icon_label.setStyleSheet("font-size: 32px;")
         layout.addWidget(icon_label)
 
-        # 标题
+        # 标题 - 简化样式
         title_label = QLabel("读取成功")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: green; margin: 10px;")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: green;")
         layout.addWidget(title_label)
 
-        # 数值显示
+        # 数值显示 - 大幅简化
         value_group = QGroupBox("测量结果")
         value_layout = QVBoxLayout(value_group)
+        value_layout.setSpacing(10)
 
-        # 主数值显示
+        # 主数值显示 - 移除复杂样式
         value_label = QLabel(f"{self.value:+8.4f}")
         value_label.setAlignment(Qt.AlignCenter)
-        value_label.setStyleSheet("""
-            font-size: 24px; 
-            font-weight: bold; 
-            color: #2E86AB; 
-            padding: 15px;
-            background-color: #F0F8FF;
-            border-radius: 8px;
-            border: 2px solid #2E86AB;
-        """)
+        value_label.setStyleSheet("font-size: 24px; font-weight: bold; color: blue; padding: 10px;")
         value_layout.addWidget(value_label)
 
         # 单位标签
         unit_label = QLabel("毫米 (mm)")
         unit_label.setAlignment(Qt.AlignCenter)
-        unit_label.setStyleSheet("font-size: 14px; color: #666; margin-top: 5px;")
+        unit_label.setStyleSheet("font-size: 14px; color: gray;")
         value_layout.addWidget(unit_label)
 
         layout.addWidget(value_group)
 
-        # 连接信息
+        # 连接信息 - 简化
         info_group = QGroupBox("连接信息")
-        info_layout = QFormLayout(info_group)
+        info_layout = QVBoxLayout(info_group)
+        info_layout.setSpacing(8)
 
-        port_label = QLabel(self.port)
-        port_label.setStyleSheet("font-weight: bold;")
-        info_layout.addRow("串口:", port_label)
+        # 使用简单的标签，不用FormLayout
+        port_info = QLabel(f"串口: {self.port}")
+        port_info.setStyleSheet("font-size: 14px; padding: 5px;")
+        info_layout.addWidget(port_info)
 
-        baudrate_label = QLabel(f"{self.baudrate} bps")
-        baudrate_label.setStyleSheet("font-weight: bold;")
-        info_layout.addRow("波特率:", baudrate_label)
+        baudrate_info = QLabel(f"波特率: {self.baudrate} bps")
+        baudrate_info.setStyleSheet("font-size: 14px; padding: 5px;")
+        info_layout.addWidget(baudrate_info)
 
         # 时间戳
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        time_label = QLabel(timestamp)
-        time_label.setStyleSheet("color: #666;")
-        info_layout.addRow("读取时间:", time_label)
+        time_info = QLabel(f"读取时间: {timestamp}")
+        time_info.setStyleSheet("font-size: 14px; color: gray; padding: 5px;")
+        info_layout.addWidget(time_info)
 
         layout.addWidget(info_group)
 
-        # 确定按钮
+        # 添加一些空间
+        layout.addSpacing(20)
+
+        # 确定按钮 - 简化样式
         ok_btn = QPushButton("确定")
-        ok_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                font-weight: bold;
-                padding: 8px 20px;
-                border-radius: 4px;
-                border: none;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
+        ok_btn.setStyleSheet("font-size: 14px; padding: 10px 30px;")
         ok_btn.clicked.connect(self.accept)
         layout.addWidget(ok_btn)
 

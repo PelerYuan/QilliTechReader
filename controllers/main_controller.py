@@ -8,6 +8,7 @@ from models.gauge_model import GaugeModel
 from models.serial_auto_detect import AutoDetectWorker
 from models.serial_model import SerialModel
 from views.main_window import MainWindow
+from models.gauge_reader import GaugeReader
 from views.dialogs import *
 from datetime import datetime
 
@@ -186,8 +187,6 @@ class MainController(QObject):
         # 恢复按钮状态
         self.view.auto_detect_pushButton.setEnabled(True)
         self.view.auto_detect_pushButton.setText("自动检测")
-
-        # ========== 修改2：自动检测完成时恢复连接按钮 ==========
         self.view.connect_pushButton.setEnabled(True)
 
         current_baudrate = int(self.view.baudrate_comboBox.currentText())
@@ -197,12 +196,16 @@ class MainController(QObject):
         result = dialog.exec_()
 
         if result == QDialog.Accepted and dialog.selected_baudrate:
-            # 用户选择了波特率
-            self.view.baudrate_comboBox.setCurrentText(str(dialog.selected_baudrate))
-            if detected_baudrate:
-                self.view.update_status(f"自动检测完成，波特率已设置为 {dialog.selected_baudrate}")
+            # 检查是否需要修改设备波特率
+            if dialog.should_change_device_baudrate:
+                self.change_device_baudrate(dialog.selected_baudrate, detected_baudrate)
             else:
-                self.view.update_status("使用当前波特率设置")
+                # 只更新界面波特率设置
+                self.view.baudrate_comboBox.setCurrentText(str(dialog.selected_baudrate))
+                if detected_baudrate:
+                    self.view.update_status(f"自动检测完成，波特率已设置为 {dialog.selected_baudrate}")
+                else:
+                    self.view.update_status("使用当前波特率设置")
         else:
             self.view.update_status("自动检测已取消")
 
@@ -720,3 +723,43 @@ class MainController(QObject):
         except Exception as e:
             self.view.update_status(f"数据库导出失败：{str(e)}")
             QMessageBox.critical(self.view, "导出失败", f"数据库文件导出失败：\n{str(e)}")
+
+    def change_device_baudrate(self, new_baudrate, detected_baudrate):
+        """修改设备波特率"""
+        current_port = self.view.port_comboBox.currentText()
+
+        try:
+            # 使用检测到的波特率连接设备，而不是当前界面设置的波特率
+            temp_reader = GaugeReader(current_port, detected_baudrate)
+            temp_reader.connect()
+
+            # 修改设备波特率
+            success = temp_reader.change_baudrate(new_baudrate)
+            temp_reader.disconnect()
+
+            if success:
+                # 更新界面波特率设置
+                self.view.baudrate_comboBox.setCurrentText(str(new_baudrate))
+                self.view.update_status(f"设备波特率已修改为 {new_baudrate}，请重新连接设备")
+
+                QMessageBox.information(
+                    self.view,
+                    "波特率修改成功",
+                    f"设备波特率已修改为 {new_baudrate} bps\n\n"
+                    f"请点击'连接'按钮重新连接设备。"
+                )
+            else:
+                QMessageBox.warning(
+                    self.view,
+                    "波特率修改失败",
+                    "无法修改设备波特率，请检查设备连接。"
+                )
+                self.view.update_status("设备波特率修改失败")
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.view,
+                "波特率修改错误",
+                f"修改设备波特率时发生错误：\n{str(e)}"
+            )
+            self.view.update_status(f"波特率修改错误: {str(e)}")

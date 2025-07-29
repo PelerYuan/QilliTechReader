@@ -13,9 +13,9 @@ class AutoDetectDialog(QDialog):
         self.current_baudrate = current_baudrate
         self.detected_baudrate = detected_baudrate
         self.selected_baudrate = None
-
+        # 添加这行
+        self.should_change_device_baudrate = False
         self.setup_ui()
-
     def setup_ui(self):
         """设置对话框UI"""
         self.setWindowTitle("自动检测结果")
@@ -86,11 +86,15 @@ class AutoDetectDialog(QDialog):
     def use_detected(self):
         """使用检测到的波特率"""
         self.selected_baudrate = self.detected_baudrate
+        # 不需要修改设备波特率，因为是检测到的
+        self.should_change_device_baudrate = False
         self.accept()
 
     def use_current(self):
         """使用当前波特率"""
         self.selected_baudrate = self.current_baudrate
+        # 添加标记，表示需要修改设备波特率
+        self.should_change_device_baudrate = True
         self.accept()
 
 

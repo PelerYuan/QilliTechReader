@@ -122,6 +122,44 @@ class GaugeReader:
         except Exception as e:
             raise Exception(f"清零失败: {str(e)}")
 
+    def change_baudrate(self, new_rate):
+        """修改波特率"""
+        if not self.serial or not self.serial.is_open:
+            raise Exception("串口未连接")
+
+        # 波特率对照表
+        rates = {
+            2400: 0x0024,
+            4800: 0x0048,
+            9600: 0x0096,
+            19200: 0x0192,
+            38400: 0x0384,
+            57600: 0x0576,
+            115200: 0x1152
+        }
+
+        if new_rate not in rates:
+            raise Exception(f"不支持的波特率: {new_rate}")
+
+        try:
+            rate_hex = rates[new_rate]
+            # 构建修改波特率命令: 01 06 00 31 + 波特率值 + CRC
+            cmd = [0x01, 0x06, 0x00, 0x31, (rate_hex >> 8) & 0xFF, rate_hex & 0xFF]
+            crc = self.crc16(cmd)
+            cmd.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+
+            self.serial.write(bytes(cmd))
+            time.sleep(0.3)  # 等待设备处理
+            response = self.serial.read(10)
+
+            if len(response) >= 8:
+                return True
+            else:
+                raise Exception("设备无响应")
+
+        except Exception as e:
+            raise Exception(f"修改波特率失败: {str(e)}")
+
     @staticmethod
     def get_available_ports():
         """获取可用串口列表"""

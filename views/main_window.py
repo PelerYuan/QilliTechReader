@@ -240,12 +240,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.read_once_pushButton.setEnabled(False)
             self.clear_pushButton.setEnabled(False)
             self.read_interval_doubleSpinBox.setEnabled(False)
+            # 添加这行：禁用连接按钮
+            self.connect_pushButton.setEnabled(False)
         else:
             self.read_serious_pushButton.setText("开始连续读取")
             # 恢复其他操作
             if self._is_connected:
                 self.read_once_pushButton.setEnabled(True)
                 self.clear_pushButton.setEnabled(True)
+                # 添加这行：恢复连接按钮
+                self.connect_pushButton.setEnabled(True)
             self.read_interval_doubleSpinBox.setEnabled(True)
 
     def add_data_to_table(self, timestamp, value):
@@ -331,7 +335,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         import os
         import subprocess
 
-        driver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "driver", "USBMSER.exe")
+        driver_path = "./driver/USBMSER.exe"
+        print(driver_path)
 
         if os.path.exists(driver_path):
             try:

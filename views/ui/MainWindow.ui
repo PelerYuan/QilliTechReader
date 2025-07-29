@@ -220,8 +220,6 @@
     <property name="title">
      <string>帮助</string>
     </property>
-    <addaction name="install_driver_action"/>
-    <addaction name="separator"/>
     <addaction name="about_action"/>
    </widget>
    <addaction name="menu"/>

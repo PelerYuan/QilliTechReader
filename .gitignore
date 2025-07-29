@@ -290,3 +290,4 @@ tmp/
 
 # 用户文档（如果是自动生成的）
 # docs/build/
+/setup_exe/

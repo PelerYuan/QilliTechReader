@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'mainwindow.ui'
+# Form implementation generated from reading ui file '.\views\ui\MainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -155,8 +155,6 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.menu_2.menuAction())
         self.menu.addSeparator()
         self.menu.addAction(self.exit_action)
-        self.menu_3.addAction(self.install_driver_action)
-        self.menu_3.addSeparator()
         self.menu_3.addAction(self.about_action)
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_3.menuAction())
@@ -190,13 +188,3 @@ class Ui_MainWindow(object):
         self.actionAccess.setText(_translate("MainWindow", "Access"))
         self.about_action.setText(_translate("MainWindow", "关于"))
         self.install_driver_action.setText(_translate("MainWindow", "安装USB驱动"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
